@@ -1,7 +1,8 @@
-import React, { Component } from "react";
+import React, { Component, useState } from "react";
 import axios from "axios";
 import Button from "react-bootstrap/Button";
 import Table from "react-bootstrap/Table";
+import Modal from "react-bootstrap/Modal";
 
 const url = "https://api.pokemontcg.io/v1/cards";
 
@@ -9,10 +10,17 @@ class App extends Component {
   state = {
     pokemonName: "",
     data: [],
+    dataPokemon: [],
+    showModal: false,
   };
 
   updatePokemonName = this.updatePokemonName.bind(this);
   searchPokemon = this.searchPokemon.bind(this);
+
+  //Evento al comenzar un componente y realiza la busqueda de todos los pokemones
+  componentDidMount() {
+    this.getPokemon();
+  }
 
   //peticion get para traer todos los pokemones
   getPokemon = () => {
@@ -21,12 +29,7 @@ class App extends Component {
     });
   };
 
-  //Evento al comenzar un componente y realiza la busqueda de todos los pokemones
-  componentDidMount() {
-    this.getPokemon();
-  }
-
-  //Actualiza el valor del pokemon
+  //Actualiza el valor del pokemon que se escribe para buscar
   updatePokemonName(event) {
     this.setState({ pokemonName: event.target.value });
   }
@@ -41,6 +44,29 @@ class App extends Component {
       console.log("Valores", response.data.cards);
       this.setState({ data: response.data.cards });
     });
+  }
+
+  //se muestra el valor del pokemon por Id
+  pokemonById(value) {
+    console.log("Id del Pokemon: " + value);
+    const valueUrl = url + "?id=" + value;
+
+    axios.get(valueUrl).then((response) => {
+      console.log("Valores", response.data.cards);
+      this.setState({ dataPokemon: response.data.cards });
+    });
+  }
+
+  //para poder mostrar el modal con los detalles del pokemon
+  showModalDetails(value) {
+    this.setState({ showModal: !this.state.showModal });
+    if (!this.state.showModal) {
+      console.log("Se abre modal");
+      console.log(value);
+      this.pokemonById(value);
+    } else {
+      console.log("Se cierra modal");
+    }
   }
 
   render() {
@@ -59,7 +85,6 @@ class App extends Component {
           value={this.state.pokemonName}
           onChange={this.updatePokemonName}
         ></input>
-
         <Button onClick={this.searchPokemon} style={{ marginLeft: "10px" }}>
           Search
         </Button>
@@ -85,13 +110,52 @@ class App extends Component {
                   </td>
                   <td>{pokemon.name}</td>
                   <td>
-                    <Button> Details </Button>
+                    <Button onClick={() => this.showModalDetails(pokemon.id)}>
+                      Details
+                    </Button>
                   </td>
                 </tr>
               </tbody>
             );
           })}
         </Table>
+
+        <Modal show={this.state.showModal}>
+          <Modal.Header>
+            <h2 style={{ fontWeight: "bold" }}>Pokemon Details</h2>
+          </Modal.Header>
+          <Modal.Body>
+            {this.state.dataPokemon.map((pokemon) => {
+              return (
+                <table>
+                  <p>
+                    <span style={{ fontWeight: "bold" }}>Name: </span>
+                    <span>{pokemon.name}</span>
+                  </p>
+                  <p>
+                    <span style={{ fontWeight: "bold" }}>Number: </span>
+                    <span>{pokemon.nationalPokedexNumber}</span>
+                  </p>
+                  <p>
+                    <span style={{ fontWeight: "bold" }}>Rarity: </span>
+                    <span>{pokemon.rarity}</span>
+                  </p>
+                  <p>
+                    <span style={{ fontWeight: "bold" }}>Series: </span>
+                    <span>{pokemon.series}</span>
+                  </p>
+                  <p>
+                    <span style={{ fontWeight: "bold" }}>Super Type: </span>
+                    <span>{pokemon.supertype}</span>
+                  </p>
+                </table>
+              );
+            })}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onClick={() => this.showModalDetails()}>Close</Button>
+          </Modal.Footer>
+        </Modal>
       </div>
     );
   }
